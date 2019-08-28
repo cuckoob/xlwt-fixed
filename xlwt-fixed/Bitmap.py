@@ -1,12 +1,7 @@
 # -*- coding: utf-8 -*-
-
-#  Portions are Copyright (C) 2005 Roman V. Kiseliov
-#  Portions are Copyright (c) 2004 Evgeny Filatov <fufff@users.sourceforge.net>
-#  Portions are Copyright (c) 2002-2004 John McNamara (Perl Spreadsheet::WriteExcel)
-
 from struct import pack, unpack
 
-from .BIFFRecords import BiffRecord
+from xlwt.BIFFRecords import BiffRecord
 
 
 def _size_col(sheet, col):
@@ -69,7 +64,7 @@ def _position_image(sheet, row_start, col_start, x1, y1, width, height):
     height  - Height of image frame
 
     """
-    # # Adjust start column for offsets that are greater than the col width
+    # Adjust start column for offsets that are greater than the col width
     # while x1 >= _size_col(sheet, col_start):
     #     x1 -= _size_col(sheet, col_start)
     #     col_start += 1
@@ -78,8 +73,8 @@ def _position_image(sheet, row_start, col_start, x1, y1, width, height):
     #     y1 -= _size_row(sheet, row_start)
     #     row_start += 1
     # Initialise end cell to the same as the start cell
-    row_end = row_start   # Row containing bottom right corner of object
-    col_end = col_start   # Col containing lower right corner of object
+    row_end = row_start  # Row containing bottom right corner of object
+    col_end = col_start  # Col containing lower right corner of object
     width = width + x1 - 1
     height = height + y1 - 1
     # Subtract the underlying cell widths to find the end cell of the image
@@ -102,11 +97,11 @@ def _position_image(sheet, row_start, col_start, x1, y1, width, height):
     x2 = int(float(width) / _size_col(sheet, col_end) * 1024)
     # Distance to bottom of object
     y2 = int(float(height) / _size_row(sheet, row_end) * 256)
-    return (col_start, x1, row_start, y1, col_end, x2, row_end, y2)
+    return (col_start, x1 + 12, row_start, y1 + 4, col_end, x2, row_end, y2)
 
 
 class ObjBmpRecord(BiffRecord):
-    _REC_ID = 0x005D    # Record identifier
+    _REC_ID = 0x005D  # Record identifier
 
     def __init__(self, row, col, sheet, im_data_bmp, x, y, scale_x, scale_y):
         # Scale the frame of the image.
@@ -122,35 +117,35 @@ class ObjBmpRecord(BiffRecord):
         to support other Excel objects.
 
         """
-        cObj = 0x0001      # Count of objects in file (set to 1)
-        OT = 0x0008        # Object type. 8 = Picture
-        id = 0x0001        # Object ID
-        grbit = 0x0614     # Option flags
-        colL = col_start    # Col containing upper left corner of object
-        dxL = x1            # Distance from left side of cell
-        rwT = row_start     # Row containing top left corner of object
-        dyT = y1            # Distance from top of cell
-        colR = col_end      # Col containing lower right corner of object
-        dxR = x2            # Distance from right of cell
-        rwB = row_end       # Row containing bottom right corner of object
-        dyB = y2            # Distance from bottom of cell
-        cbMacro = 0x0000    # Length of FMLA structure
+        cObj = 0x0001  # Count of objects in file (set to 1)
+        OT = 0x0008  # Object type. 8 = Picture
+        id = 0x0001  # Object ID
+        grbit = 0x0614  # Option flags
+        colL = col_start  # Col containing upper left corner of object
+        dxL = x1  # Distance from left side of cell
+        rwT = row_start  # Row containing top left corner of object
+        dyT = y1  # Distance from top of cell
+        colR = col_end  # Col containing lower right corner of object
+        dxR = x2  # Distance from right of cell
+        rwB = row_end  # Row containing bottom right corner of object
+        dyB = y2  # Distance from bottom of cell
+        cbMacro = 0x0000  # Length of FMLA structure
         Reserved1 = 0x0000  # Reserved
         Reserved2 = 0x0000  # Reserved
-        icvBack = 0x09      # Background colour
-        icvFore = 0x09      # Foreground colour
-        fls = 0x00          # Fill pattern
-        fAuto = 0x00        # Automatic fill
-        icv = 0x08          # Line colour
-        lns = 0xff          # Line style
-        lnw = 0x01          # Line weight
-        fAutoB = 0x00       # Automatic border
-        frs = 0x0000        # Frame style
-        cf = 0x0009         # Image format, 9 = bitmap
+        icvBack = 0x09  # Background colour
+        icvFore = 0x09  # Foreground colour
+        fls = 0x00  # Fill pattern
+        fAuto = 0x00  # Automatic fill
+        icv = 0x08  # Line colour
+        lns = 0xff  # Line style
+        lnw = 0x01  # Line weight
+        fAutoB = 0x00  # Automatic border
+        frs = 0x0000  # Frame style
+        cf = 0x0009  # Image format, 9 = bitmap
         Reserved3 = 0x0000  # Reserved
-        cbPictFmla = 0x0000 # Length of FMLA structure
+        cbPictFmla = 0x0000  # Length of FMLA structure
         Reserved4 = 0x0000  # Reserved
-        grbit2 = 0x0001     # Option flags
+        grbit2 = 0x0001  # Option flags
         Reserved5 = 0x0000  # Reserved
 
         data = pack("<L", cObj)
@@ -186,6 +181,7 @@ class ObjBmpRecord(BiffRecord):
 
         self._rec_data = data
 
+
 def _process_bitmap(bitmap):
     """Convert a 24 bit bitmap into the modified internal format used by Windows.
     This is described in BITMAPCOREHEADER and BITMAPCOREINFO structures in the
@@ -197,6 +193,7 @@ def _process_bitmap(bitmap):
         # Slurp the file into a string.
         data = fh.read()
     return _process_bitmap_data(data)
+
 
 def _process_bitmap_data(data):
     # Check that the file is big enough to be a bitmap.
@@ -211,8 +208,8 @@ def _process_bitmap_data(data):
     # the data size at offset 0x22.
     #
     size = unpack("<L", data[:4])[0]
-    size -=  0x36   # Subtract size of bitmap header.
-    size +=  0x0C   # Add size of BIFF header.
+    size -= 0x36  # Subtract size of bitmap header.
+    size += 0x0C  # Add size of BIFF header.
     data = data[4:]
     # Remove bitmap data: reserved, offset, header length.
     data = data[12:]
@@ -262,6 +259,7 @@ class ImRawDataBmpRecord(BiffRecord):
         env = 0x01
         lcb = self.size
         self._rec_data = pack("<HHL", cf, env, lcb) + data
+
 
 class ImDataBmpRecord(ImRawDataBmpRecord):
     def __init__(self, filename):

@@ -40,13 +40,13 @@
 
 import six
 
-from . import BIFFRecords, Style
+from xlwt import BIFFRecords, Style
 
 
 class Workbook(object):
     """
     This is a class representing a workbook and all its contents. When creating
-    Excel files with xlwt, you will normally start by instantiating an
+    Excel files with xlwt_fix, you will normally start by instantiating an
     object of this class.
     """
 
@@ -56,7 +56,7 @@ class Workbook(object):
     def __init__(self, encoding='ascii', style_compression=0):
         self.encoding = encoding
         self.__owner = 'None'
-        self.__country_code = None # 0x07 is Russia :-)
+        self.__country_code = None  # 0x07 is Russia :-)
         self.__wnd_protect = 0
         self.__obj_protect = 0
         self.__protect = 0
@@ -95,8 +95,6 @@ class Workbook(object):
         self._ownbook_supbook_ref = None
         self._xcall_supbookx = None
         self._xcall_supbook_ref = None
-
-
 
     #################################################################
     ## Properties, "getters", "setters"
@@ -304,12 +302,12 @@ class Workbook(object):
     #################################################################
 
     def set_colour_RGB(self, colour_index, red, green, blue):
-        if not(8 <= colour_index <= 63):
+        if not (8 <= colour_index <= 63):
             raise Exception("set_colour_RGB: colour_index (%d) not in range(8, 64)" %
-                    colour_index)
+                            colour_index)
         if min(red, green, blue) < 0 or max(red, green, blue) > 255:
             raise Exception("set_colour_RGB: colour values (%d,%d,%d) must be in range(0, 256)"
-                    % (red, green, blue))
+                            % (red, green, blue))
         if self.__custom_palette_b8 is None:
             self.__custom_palette_b8 = list(Style.excel_default_palette_b8)
         # User-defined Palette starts at colour index 8,
@@ -358,10 +356,10 @@ class Workbook(object):
 
         :return:
 
-          The :class:`~xlwt.Worksheet.Worksheet` that was added.
+          The :class:`~xlwt_fix.Worksheet.Worksheet` that was added.
 
         """
-        from . import Utils
+        from xlwt import Utils
         from .Worksheet import Worksheet
         if not isinstance(sheetname, six.text_type):
             sheetname = sheetname.decode(self.encoding)
@@ -447,7 +445,7 @@ class Workbook(object):
                 ref1n = self.convert_sheetindex(ref1, n_sheets)
             if ref1n < ref0n:
                 msg = "Formula: sheets out of order; %r:%r -> (%d, %d)" \
-                    % (ref0, ref1, ref0n, ref1n)
+                      % (ref0, ref1, ref0n, ref1n)
                 raise Exception(msg)
             if self._ownbook_supbookx is None:
                 self.setup_ownbook()
@@ -533,10 +531,10 @@ class Workbook(object):
         flags |= (self.__tabs_visible) << 5
 
         return BIFFRecords.Window1Record(self.__hpos_twips, self.__vpos_twips,
-                                self.__width_twips, self.__height_twips,
-                                flags,
-                                self.__active_sheet, self.__first_tab_index,
-                                self.__selected_tabs, self.__tab_width_twips).get()
+                                         self.__width_twips, self.__height_twips,
+                                         flags,
+                                         self.__active_sheet, self.__first_tab_index,
+                                         self.__selected_tabs, self.__tab_width_twips).get()
 
     def __codepage_rec(self):
         return BIFFRecords.CodepageBiff8Record().get()
@@ -592,15 +590,15 @@ class Workbook(object):
         for sheet in self.__worksheets:
             boundsheets_len += len(BIFFRecords.BoundSheetRecord(
                 0x00, sheet.visibility, sheet.name, self.encoding
-                ).get())
+            ).get())
 
         start = data_len_before + boundsheets_len + data_len_after
 
         result = b''
-        for sheet_biff_len,  sheet in zip(sheet_biff_lens, self.__worksheets):
+        for sheet_biff_len, sheet in zip(sheet_biff_lens, self.__worksheets):
             result += BIFFRecords.BoundSheetRecord(
                 start, sheet.visibility, sheet.name, self.encoding
-                ).get()
+            ).get()
             start += sheet_biff_len
         return result
 
@@ -638,8 +636,8 @@ class Workbook(object):
 
     def __ext_sst_rec(self, abs_stream_pos):
         return b''
-        #return BIFFRecords.ExtSSTRecord(abs_stream_pos, self.sst_record.str_placement,
-        #self.sst_record.portions_len).get()
+        # return BIFFRecords.ExtSSTRecord(abs_stream_pos, self.sst_record.str_placement,
+        # self.sst_record.portions_len).get()
 
     def get_biff_data(self):
         before = b''
@@ -669,13 +667,13 @@ class Workbook(object):
         before += self.__palette_rec()
         before += self.__useselfs_rec()
 
-        country            = self.__country_rec()
-        all_links          = self.__all_links_rec()
+        country = self.__country_rec()
+        all_links = self.__all_links_rec()
 
-        shared_str_table   = self.__sst_rec()
+        shared_str_table = self.__sst_rec()
         after = country + all_links + shared_str_table
 
-        ext_sst = self.__ext_sst_rec(0) # need fake cause we need calc stream pos
+        ext_sst = self.__ext_sst_rec(0)  # need fake cause we need calc stream pos
         eof = self.__eof_rec()
 
         self.__worksheets[self.__active_sheet].selected = True
@@ -686,9 +684,9 @@ class Workbook(object):
             sheets += data
             sheet_biff_lens.append(len(data))
 
-        bundlesheets = self.__boundsheets_rec(len(before), len(after)+len(ext_sst)+len(eof), sheet_biff_lens)
+        bundlesheets = self.__boundsheets_rec(len(before), len(after) + len(ext_sst) + len(eof), sheet_biff_lens)
 
-        sst_stream_pos = len(before) + len(bundlesheets) + len(country)  + len(all_links)
+        sst_stream_pos = len(before) + len(bundlesheets) + len(country) + len(all_links)
         ext_sst = self.__ext_sst_rec(sst_stream_pos)
 
         return before + bundlesheets + after + ext_sst + eof + sheets
@@ -705,7 +703,7 @@ class Workbook(object):
           a :class:`~io.StringIO`, in which case the data for the excel
           file is written to the stream.
         """
-        from . import CompoundDoc
+        from xlwt import CompoundDoc
 
         doc = CompoundDoc.XlsDoc()
         doc.save(filename_or_stream, self.get_biff_data())
